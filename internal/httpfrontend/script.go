@@ -3,6 +3,7 @@ package httpfrontend
 import (
 	"encoding/json/v2"
 	"errors"
+	"io"
 	"mime"
 	"net"
 	"net/http"
@@ -123,6 +124,8 @@ func readScriptRequest(r *http.Request) (gateway.ScriptRequest, int, error) {
 	switch mediaType {
 	case "application/json":
 		req, status, err = readJSONScriptRequest(r)
+	case "application/javascript", "text/javascript", "text/plain":
+		req, status, err = readRawScriptRequest(r)
 	default:
 		return gateway.ScriptRequest{}, http.StatusUnsupportedMediaType, errors.New("unsupported Content-Type")
 	}
@@ -150,6 +153,24 @@ func readJSONScriptRequest(r *http.Request) (gateway.ScriptRequest, int, error) 
 	return gateway.ScriptRequest{
 		Script:  wire.Script,
 		Secrets: wire.Secrets,
+		Timeout: requestedTimeout,
+	}, http.StatusOK, nil
+}
+
+// readRawScriptRequest reads JavaScript source from r.Body.
+// It gets an optional timeout from the timeout query parameter.
+func readRawScriptRequest(r *http.Request) (gateway.ScriptRequest, int, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		status, bodyErr := scriptBodyError(err)
+		return gateway.ScriptRequest{}, status, bodyErr
+	}
+	requestedTimeout, err := parseOptionalTimeout(r.URL.Query().Get("timeout"))
+	if err != nil {
+		return gateway.ScriptRequest{}, http.StatusBadRequest, err
+	}
+	return gateway.ScriptRequest{
+		Script:  string(body),
 		Timeout: requestedTimeout,
 	}, http.StatusOK, nil
 }
