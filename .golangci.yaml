@@ -337,6 +337,8 @@ linters:
       - source: '^package main$'
         linters: [revive]
         text: '^package-comments:'
+      - path: _test\.go
+        linters: [gosec]
 
 formatters:
   enable:
