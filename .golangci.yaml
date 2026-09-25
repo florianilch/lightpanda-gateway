@@ -1,0 +1,27 @@
+version: "2"
+
+linters:
+  exclusions:
+    warn-unused: true
+    rules:
+      # Trimmed copy of golangci-lint's std-error-handling preset: same pattern,
+      # minus Close/Flush terms to still catch deferred Close or a buffered
+      # Flush.
+      - linters: [errcheck]
+        text: '(?i)Error return value of .((os\.)?std(out|err)\..*|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked'
+
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      custom-order: true
+      # Keep standard first because gofumpt's only import rule is stdlib
+      # separated at the top.
+      sections: [standard, default, localmodule]
+    gofumpt:
+      extra:
+        group-params: true   # func Foo(a string, b string) -> func Foo(a, b string)
+        balance-calls: true  # compute(\n a,\n b) -> compute(\n a,\n b,\n)
+        clothe-returns: true # naked "return" -> "return result, err" in named-result funcs
