@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -139,7 +140,11 @@ func shutdownTestServices(frontend *httpfrontend.Server, gw *gateway.Gateway) er
 func buildFakeLightpanda(t *testing.T) string {
 	t.Helper()
 
-	binary := filepath.Join(t.TempDir(), "fakelightpanda")
+	binaryName := "fakelightpanda"
+	if runtime.GOOS == "windows" {
+		binaryName += ".exe"
+	}
+	binary := filepath.Join(t.TempDir(), binaryName)
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "go", "build", "-buildvcs=false", "-o", binary, "./testdata/fakelightpanda")
