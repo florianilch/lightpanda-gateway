@@ -1,4 +1,4 @@
-.PHONY: all run build test test-coverage fmt lint audit clean
+.PHONY: all run build test test-coverage fmt lint audit snapshot clean
 
 BINARY_NAME := lpgw
 MAIN := ./cmd/lpgw
@@ -28,6 +28,9 @@ audit:
 	go mod tidy -diff
 	go mod verify
 	go tool govulncheck ./...
+
+snapshot:
+	goreleaser build --snapshot --clean
 
 clean:
 	rm -f $(BINARY_NAME)
