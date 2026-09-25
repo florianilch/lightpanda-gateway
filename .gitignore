@@ -1,0 +1,24 @@
+# Binaries
+/lpgw
+/lpgw.exe
+
+# Output
+/dist/
+
+# Test artifacts
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# Logs
+*.log
+
+# IDE / editor
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+.DS_Store
