@@ -1,6 +1,331 @@
 version: "2"
 
 linters:
+  default: none
+
+  enable:
+    # Gocritic checks for bugs, style problems, and slow code using pattern rules.
+    - gocritic
+    # Gosec finds security bugs: injection, hardcoded secrets, bad file
+    # permissions, and weak crypto.
+    - gosec
+    # Govet runs go vet's checks for suspicious code.
+    - govet
+    # Modernize suggests newer Go syntax: any, the slices and maps packages,
+    # range over int, min, and max.
+    - modernize
+    # Revive replaces golint.
+    - revive
+    # Staticcheck runs a suite of static analysis checks.
+    - staticcheck
+
+    # Godoclint checks doc comment style.
+    - godoclint
+    # Errorlint finds old error handling: err == ErrFoo instead of
+    # errors.Is, a type assertion instead of errors.As, and %v instead of
+    # %w in fmt.Errorf.
+    - errorlint
+    # Iface finds interfaces that should not exist.
+    - iface
+    # Loggercheck finds a structured log call with an odd number of
+    # key-value arguments.
+    - loggercheck
+    # Sloglint checks log/slog call style.
+    - sloglint
+    # Gomoddirectives checks go.mod for replace, retract, and exclude
+    # directives.
+    - gomoddirectives
+    # Perfsprint suggests faster code than fmt.Sprintf: strconv,
+    # hex.EncodeToString, a plain string, or concatenation.
+    - perfsprint
+    # Bidichk finds hidden Unicode direction-control characters, the kind
+    # used in the Trojan Source attack.
+    - bidichk
+    # Usestdlibvars finds a literal that repeats a stdlib constant, such
+    # as "GET" instead of http.MethodGet.
+    - usestdlibvars
+    # Thelper checks test helper functions for a leading t.Helper() call,
+    # and for consistent naming and order of the T, B, F, or TB parameter.
+    - thelper
+    # Usetesting finds code that testing already provides, such as a
+    # manual temp directory instead of t.TempDir.
+    - usetesting
+
+    # Containedctx finds a context.Context stored as a struct field.
+    - containedctx
+    # Contextcheck finds a function that creates a new context instead of
+    # using the one passed in.
+    - contextcheck
+    # Fatcontext finds a context.With call inside a loop or closure, which
+    # adds wrapping on every pass.
+    - fatcontext
+    # Noctx finds an HTTP or database call made without a context.Context.
+    - noctx
+    # Durationcheck finds two time.Duration values multiplied together,
+    # which produces a nonsense result.
+    - durationcheck
+    # Errcheck finds an ignored error return value.
+    - errcheck
+    # Errname checks naming: a sentinel error needs an Err or err prefix,
+    # and an error type needs an Error suffix.
+    - errname
+    # Nilnesserr finds code that checks one error for nil but returns a
+    # different, unchecked error.
+    - nilnesserr
+    # Whitespace finds a blank line at the start or end of a block, such
+    # as an if, for, or switch.
+    - whitespace
+    # Bodyclose finds an HTTP response body that is never closed.
+    - bodyclose
+    # Inamedparam finds an interface method with unnamed parameters.
+    - inamedparam
+    # Goprintffuncname finds a printf-style wrapper function whose name
+    # does not end in f.
+    - goprintffuncname
+    # Recvcheck finds a type whose methods mix pointer and value receivers.
+    - recvcheck
+    # Makezero finds make([]T, n) with a nonzero length that is later
+    # appended to, which writes after the existing elements instead of
+    # filling them.
+    - makezero
+    # Mirror finds a byte slice or string converted only to call the
+    # wrong stdlib method.
+    - mirror
+    # Testableexamples finds an Example function with no Output comment,
+    # so go test never runs it.
+    - testableexamples
+    # Ineffassign finds a value assigned to a variable that is never read
+    # again.
+    - ineffassign
+    # Unparam finds a function parameter that is never used, or always
+    # passed the same value.
+    - unparam
+    # Unused finds unused constants, variables, functions, and types.
+    - unused
+    # Wastedassign finds a value overwritten by a later assignment before
+    # it is ever read.
+    - wastedassign
+    # Asasalint finds a []any slice passed where separate variadic
+    # arguments were expected.
+    - asasalint
+
+  settings:
+    # Gocritic has enabled-tags empty by default.
+    # Keep opinionated out of enabled-tags because its paramTypeCombine
+    # checker duplicates gofumpt's group-params.
+    gocritic:
+      enabled-tags: [diagnostic, style, performance]
+
+    # Gosec has all checks true by default.
+    gosec:
+      excludes:
+        # Disable G104 because it checks for the same thing errcheck does:
+        # an unchecked error return value.
+        - G104
+
+    # Govet has appends, asmdecl, assign, atomic, bools, buildtag,
+    # cgocall, composites, copylocks, defers, directive, errorsas,
+    # framepointer, httpresponse, ifaceassert, inline, loopclosure,
+    # lostcancel, nilfunc, printf, shift, sigchanyzer, slog, stdmethods,
+    # stringintconv, structtag, testinggoroutine, tests, timeformat,
+    # unmarshal, unreachable, unsafeptr, and unusedresult true by default.
+    # atomicalign, deepequalerrors, fieldalignment, findcall, hostport,
+    # httpmux, nilness, reflectvaluecompare, shadow, sortslice, stdversion,
+    # unusedwrite, and waitgroup are false by default.
+    govet:
+      enable:
+        - atomicalign         # non-64-bit-aligned arguments to sync/atomic functions
+        - deepequalerrors     # reflect.DeepEqual on error values
+        - hostport            # fmt.Sprintf to build a host:port string instead of net.JoinHostPort
+        - nilness             # nil pointer dereferences and impossible nil comparisons
+        - reflectvaluecompare # comparing reflect.Value with == or reflect.DeepEqual
+        - sortslice           # non-slice argument passed to sort.Slice
+        - stdversion          # a stdlib symbol newer than the file's declared Go version
+        - unusedwrite         # a struct field or array element written but never read
+        - waitgroup           # wg.Add called from inside the goroutine it is meant to track
+        # Keep shadow false because its own docs report excessive false positives.
+        # Keep findcall false because it is test scaffolding for the analysis framework, not a real check.
+
+    # Modernize has all analyzers true by default.
+    modernize:
+      disable:
+        # Disable omitzero because it has different zero-value semantics than
+        # omitempty for types implementing IsZero(), and can change JSON output.
+        - omitzero
+
+    # Revive has 23 rules true by default when no rules list is given:
+    # blank-imports, context-as-argument, context-keys-type, dot-imports,
+    # empty-block, error-naming, error-return, error-strings, errorf,
+    # exported, increment-decrement, indent-error-flow, package-comments,
+    # range, receiver-naming, redefines-builtin-id, superfluous-else,
+    # time-naming, unexported-return, unreachable-code, unused-parameter,
+    # var-declaration, var-naming. This list keeps all but error-naming,
+    # and adds early-return, marshal-receiver, redundant-import-alias, and
+    # use-fmt-print.
+    revive:
+      rules:
+        - name: blank-imports          # disallows blank imports
+        - name: context-as-argument    # context.Context should be the first argument
+        - name: context-keys-type      # disallows basic types as context.WithValue keys
+        - name: dot-imports            # forbids `.` imports
+        - name: early-return           # general guard-clause preference (indent-error-flow is the error-check subset)
+        - name: empty-block            # warns on empty code blocks
+        - name: error-return           # the error return value should be last
+        - name: error-strings          # error strings shouldn't be capitalized/punctuated
+        - name: errorf                 # use fmt.Errorf() instead of errors.New(fmt.Sprintf())
+        - name: exported               # naming/commenting conventions on exported symbols
+          arguments:
+            - checkPrivateReceivers    # also check exported methods on unexported receiver types
+        - name: increment-decrement    # use i++ / i-- instead of i += 1 / i -= 1
+        - name: indent-error-flow      # prevents redundant else after a return
+        # - name: marshal-receiver       # Marshal* methods need value receivers, Unmarshal* need pointer receivers
+        - name: package-comments       # package commenting conventions
+        - name: range                  # prevents redundant vars when ranging
+        - name: receiver-naming        # conventions around receiver naming
+        - name: redefines-builtin-id   # warns on redefinitions of builtin identifiers
+        - name: redundant-import-alias # import foo "foo" - alias identical to the package's own name
+        - name: superfluous-else       # extends indent-error-flow
+        - name: time-naming            # conventions around naming time variables
+        - name: unexported-return      # warns when a public func returns an unexported type
+        - name: unreachable-code       # warns on unreachable code
+        - name: unused-parameter       # suggests renaming/removing unused params
+        - name: use-fmt-print          # built-in print/println are bootstrapping-only, not guaranteed to stay
+        - name: var-declaration        # reduces redundancy in variable declarations
+        - name: var-naming             # naming rules (initialisms, etc.)
+
+        ## Disabled
+        # `error-naming` covered by `errname` linter
+        # `unhandled-error` covered by `errcheck`
+        # `use-slices-sort` covered by modernize's `slicessort` analyzer
+        # `use-waitgroup-go` covered by modernize's `waitgroupgo` analyzer
+        # `use-any` covered by modernize's `any` analyzer
+        # `redundant-build-tag` covered by modernize's `plusbuild` analyzer
+        # `string-of-int` covered by govet's `stringintconv` analyzer
+        # `struct-tag` covered by staticcheck's SA5008
+        # `if-return` covered by staticcheck's S1008
+        # `unconditional-recursion` covered by staticcheck's SA5007
+        # `bool-literal-in-expr` covered by staticcheck's S1002
+        # `bare-return` covered by gofumpt's clothe-returns
+
+    # Staticcheck has all SA, S1, ST1, and QF checks true by default.
+    # ST1000, ST1003, ST1016, ST1020, ST1021, and ST1022 are false by
+    # default.
+    staticcheck: {}
+
+    # Godoclint has pkg-doc, single-pkg-doc, start-with-name, and
+    # deprecated true by default. require-stdlib-doclink is false by
+    # default.
+    godoclint:
+      default: none
+      enable:
+        - require-stdlib-doclink
+
+    # Iface has identical true by default. opaque, unused, and unexported
+    # are false by default.
+    iface:
+      enable:
+        - identical  # interfaces in the same package with identical method sets
+        - opaque     # a func returns an interface but only one concrete type ever implements it
+        - unused     # interface never used anywhere in its defining package
+
+    # Sloglint has no-mixed-args true by default. attr-only, kv-only,
+    # no-global, context, static-msg, msg-style, no-raw-keys,
+    # key-naming-case, forbidden-keys, and args-on-sep-lines are false or
+    # empty by default.
+    sloglint: {}
+
+    # Gomoddirectives has replace-local, replace-allow-list, and
+    # replace-allow-all false or empty by default.
+    # retract-allow-no-explanation, exclude-forbidden, ignore-forbidden,
+    # tool-forbidden, go-debug-forbidden, and toolchain-forbidden are false
+    # by default. toolchain-pattern and go-version-pattern are empty by
+    # default.
+    # Keep replace-allow-all false because it removes the replace-directive check entirely.
+    gomoddirectives: {}
+
+    # Perfsprint has integer-format, int-conversion, error-format, errorf,
+    # string-format, sprintf1, strconcat, bool-format, and hex-format true
+    # by default. err-error, concat-loop, and loop-other-ops are false by
+    # default.
+    # Keep err-error false because it changes panic behavior on a nil error.
+    # Keep loop-other-ops false because it can propose a fix that does not compile.
+    perfsprint: {}
+
+    # Bidichk has left-to-right-embedding, right-to-left-embedding,
+    # pop-directional-formatting, left-to-right-override,
+    # right-to-left-override, left-to-right-isolate, right-to-left-isolate,
+    # first-strong-isolate, and pop-directional-isolate true by default.
+    bidichk: {}
+
+    # Usestdlibvars has http-method and http-status-code true by default.
+    # time-weekday, time-month, time-layout, crypto-hash, default-rpc-path,
+    # sql-isolation-level, tls-signature-scheme, and constant-kind are
+    # false by default.
+    usestdlibvars:
+      http-status-code: false # disable because it duplicates staticcheck's ST1013
+      time-layout: true       # raw time.Format/Parse layout strings instead of time.RFC3339 etc.
+      time-weekday: true      # comparison against a raw weekday int/string instead of time.Sunday etc.
+      time-month: true        # comparison against a raw month int/string instead of time.January etc.
+      constant-kind: true     # a literal instead of a go/constant.Kind value
+
+    # Thelper has test.first, test.name, test.begin, benchmark.first,
+    # benchmark.name, benchmark.begin, fuzz.first, fuzz.name, fuzz.begin,
+    # tb.first, tb.name, and tb.begin true by default.
+    thelper: {}
+
+    # Usetesting has os-mkdir-temp, os-setenv, os-create-temp, and
+    # os-chdir true by default. os-temp-dir, context-background, and
+    # context-todo are false by default.
+    usetesting:
+      context-background: true # context.Background() in a test instead of t.Context()
+      context-todo: true       # context.TODO() in a test instead of t.Context()
+
+    # Fatcontext has check-loops and check-function-literals true by
+    # default. check-struct-pointers is false by default.
+    fatcontext: {}
+
+    # Errcheck has disable-default-exclusions, check-type-assertions,
+    # check-blank, and verbose false by default.
+    errcheck: {}
+
+    # Whitespace has multi-if and multi-func false by default.
+    # Keep multi-if and multi-func false because either conflicts with
+    # gofumpt's rule against empty lines at the start of a function with a
+    # multi-line signature (gofumpt issue #321).
+    whitespace: {}
+
+    # Bodyclose has check-consumption false by default.
+    bodyclose: {}
+
+    # Inamedparam has skip-single-param false by default.
+    inamedparam:
+      skip-single-param: true # a single-parameter method's purpose is usually clear from its type alone
+
+    # Recvcheck has disable-builtin false by default.
+    # Keep disable-builtin false because true would conflict with revive's
+    # marshal-receiver rule.
+    recvcheck: {}
+
+    # Makezero has always false by default.
+    makezero: {}
+
+    # Ineffassign has check-escaping-errors false by default.
+    ineffassign: {}
+
+    # Unparam has check-exported false by default.
+    unparam: {}
+
+    # Unused has field-writes-are-uses, exported-fields-are-used,
+    # parameters-are-used, local-variables-are-used, and generated-is-used
+    # true by default. post-statements-are-reads is false by default.
+    unused: {}
+
+    # Asasalint has use-builtin-exclusions true by default, and
+    # exclude-functions defaults to
+    # ^(fmt|log|logger|t|)\.(Print|Fprint|Sprint|Fatal|Panic|Error|Warn|
+    # Warning|Info|Debug|Log)(|f|ln)$.
+    asasalint: {}
+
   exclusions:
     warn-unused: true
     rules:
@@ -9,6 +334,9 @@ linters:
       # Flush.
       - linters: [errcheck]
         text: '(?i)Error return value of .((os\.)?std(out|err)\..*|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked'
+      - source: '^package main$'
+        linters: [revive]
+        text: '^package-comments:'
 
 formatters:
   enable:
