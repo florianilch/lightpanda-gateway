@@ -193,6 +193,7 @@ func (s *Server) routes(isReady func() bool) http.Handler {
 
 	mux.HandleFunc("GET /healthz", healthHandler)
 	mux.Handle("GET /readyz", readyHandler(isReady))
+	mux.Handle("GET /metrics", s.metricsHandler())
 	return mux
 }
 
