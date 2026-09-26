@@ -60,7 +60,7 @@ curl http://localhost:8080/scripts \
 ```ts
 import { chromium } from 'playwright-core'
 
-await using const browser = await chromium.connectOverCDP('http://localhost:8080/ws', {
+await using browser = await chromium.connectOverCDP('http://localhost:8080/ws', {
   headers: { 'Authorization': 'Bearer secret' },
 })
 
