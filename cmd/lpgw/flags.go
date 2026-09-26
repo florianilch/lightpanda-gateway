@@ -17,7 +17,7 @@ type options struct {
 	apiKeyFile           string
 	allowUnauthenticated bool
 	// maxConcurrency configures two independent limits with the same value:
-	// admitted Gateway resources and accepted HTTP /ws and /scripts operations.
+	// admitted Gateway resources and accepted HTTP /scripts operations.
 	maxConcurrency       int
 	queueTimeout         time.Duration
 	maxOperationLifetime time.Duration
@@ -61,11 +61,23 @@ func parseFlags(args []string) (options, bool, error) {
 	)
 
 	fs := flag.NewFlagSet("lpgw", flag.ContinueOnError)
+	fs.Usage = func() {
+		out := fs.Output()
+		fmt.Fprintln(out, "A gateway for running Lightpanda workloads with")
+		fmt.Fprintln(out, "process lifecycle and concurrency control.")
+		fmt.Fprintln(out)
+		fmt.Fprintln(out, "Usage:")
+		fmt.Fprintln(out, "  lpgw [flags]")
+		fmt.Fprintln(out)
+		fmt.Fprintln(out, "Flags:")
+		fs.PrintDefaults()
+		fmt.Fprintln(out)
+	}
 	fs.BoolVar(&showVersion, "version", false, "print version and exit")
 	fs.StringVar(&opts.addr, "addr", ":8080", "listen address")
 	fs.StringVar(&opts.apiKeyFile, "api-key-file", "", "path to a file containing the API key")
 	fs.BoolVar(&opts.allowUnauthenticated, "allow-unauthenticated", false, "disable API-key authentication")
-	fs.IntVar(&opts.maxConcurrency, "max-concurrency", 1, "maximum concurrent /ws and /scripts operations")
+	fs.IntVar(&opts.maxConcurrency, "max-concurrency", 1, "maximum concurrent /scripts operations")
 	fs.DurationVar(&opts.queueTimeout, "queue-timeout", 10*time.Second, "maximum time a request may wait in the Gateway queue; 0 has no deadline")
 	fs.DurationVar(&opts.maxOperationLifetime, "max-operation-lifetime", 30*time.Minute, "time after which an operation is asked to stop; 0 disables the limit, clients can request a shorter lifetime")
 	fs.Int64Var(&opts.maxScriptBytes, "max-script-bytes", 1<<20, "max request body for /scripts")
