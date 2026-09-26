@@ -3,7 +3,7 @@
 A gateway service for running Lightpanda workloads in private infrastructure with process lifecycle and concurrency control. If this is not a requirement, see [Lightpanda Cloud](https://lightpanda.io/docs/core-concepts/local-vs-cloud) from the Lightpanda team.
 
 - **Admission control:** Enforce queue-backed concurrency limits with a dedicated child process per browser session.
-- **Independent replicas:** Scale capacity by running multiple instances behind a load balancer without cluster coordination, using `/healthz`, `/readyz` and `/metrics`.
+- **Independent replicas:** Scale capacity by running multiple instances behind a load balancer, using `/healthz`, `/readyz` and `/metrics`.
 
 ---
 
@@ -60,7 +60,7 @@ curl http://localhost:8080/scripts \
 ```ts
 import { chromium } from 'playwright-core'
 
-const browser = await chromium.connectOverCDP('http://localhost:8080/ws', {
+await using const browser = await chromium.connectOverCDP('http://localhost:8080/ws', {
   headers: { 'Authorization': 'Bearer secret' },
 })
 
@@ -78,9 +78,7 @@ console.log(result.markdown)
 
 await page.close()
 await context.close()
-await browser.close()
 ```
-
 
 ## API
 
