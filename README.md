@@ -38,6 +38,7 @@ curl http://localhost:8080/scripts \
     "secrets": {"LP_TARGET": "https://example.com"},
     "timeout": "30s"
   }'
+# {"stdout":"{\"title\":\"Example Domain\"}\n","exit_code":0}
 
 # or send the script directly
 curl http://localhost:8080/scripts \
