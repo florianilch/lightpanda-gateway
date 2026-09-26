@@ -8,10 +8,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 )
+
+// CDPHost is the loopback address for the Lightpanda CDP server. Lightpanda does not
+// authenticate CDP connections, so the server must listen only on loopback.
+const CDPHost = "127.0.0.1"
 
 // blockedCIDRs lists loopback CIDRs blocked by default for managed Lightpanda children
 // running `serve` or `run`. These blocks keep client-controlled content from reaching
@@ -27,10 +32,19 @@ type Launcher struct {
 	sharedArgs []string
 }
 
+// CDPServerOptions configures a `lightpanda serve` command.
+type CDPServerOptions struct {
+	// MaxConnections sets the limit for backend connections and connections waiting to
+	// be accepted. NewCDPServerCmd uses this value for both limits.
+	MaxConnections int
+}
+
 // NewLauncher creates a Launcher for the Lightpanda executable at binaryPath.
 // binaryPath must be absolute.
 //
-// launchArgs provides additional arguments for each child command. Launcher also sets
+// launchArgs provides additional arguments for each child command. NewCDPServerCmd
+// reserves --host, --port, --cdp-max-connections, and --cdp-max-pending-connections so
+// the CDP endpoint and connection limits stay under lpgw control. Launcher also sets
 // --log-format logfmt and --block-private-networks, and rejects log filters and the
 // deprecated --timeout so lpgw controls logging, network isolation, and timeouts.
 //
@@ -48,6 +62,36 @@ func NewLauncher(binaryPath string, launchArgs []string) (*Launcher, error) {
 		return nil, err
 	}
 	return &Launcher{binaryPath: binaryPath, sharedArgs: buildSharedArgs(launchArgs)}, nil
+}
+
+// NewCDPServerCmd prepares a `lightpanda serve` command that listens on loopback. The OS
+// chooses the port.
+//
+// On success, the returned Cmd owns the browser working directory. Call Discard if the
+// command is not started or if Start fails.
+//
+// extraEnv adds environment variables to the child process. It cannot override variables
+// managed by this package.
+func (l *Launcher) NewCDPServerCmd(ctx context.Context, opts CDPServerOptions, extraEnv map[string]string, stdout, stderr io.Writer) (*Cmd, error) {
+	if opts.MaxConnections < 1 || opts.MaxConnections > 65535 {
+		return nil, errors.New("browser: MaxConnections must be between 1 and 65535")
+	}
+	if err := validateExtraEnv(extraEnv); err != nil {
+		return nil, err
+	}
+	dir, err := createProcessDir()
+	if err != nil {
+		return nil, err
+	}
+	maxConnections := strconv.Itoa(opts.MaxConnections)
+	args := append([]string{
+		"serve",
+		"--host", CDPHost,
+		"--port", "0",
+		"--cdp-max-connections", maxConnections,
+		"--cdp-max-pending-connections", maxConnections,
+	}, l.sharedArgs...)
+	return l.newCmd(ctx, dir, args, extraEnv, stdout, stderr), nil
 }
 
 // NewScriptCmd writes the script source to script.js in a browser working directory and
@@ -94,8 +138,6 @@ func (l *Launcher) newCmd(ctx context.Context, dir string, args []string, extraE
 	}
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	// When ctx is canceled, Cancel asks the child to stop. It sends SIGTERM on platforms
-	// that support it. WaitDelay force-kills the child if it does not exit before the delay.
 	cmd.Cancel = func() error { return cmd.Process.Signal(syscall.SIGTERM) }
 	cmd.WaitDelay = browserCmdWaitDelay
 	return &Cmd{cmd: cmd, processDir: dir}
@@ -111,7 +153,7 @@ func validateLaunchArgs(launchArgs []string) error {
 		}
 		name, _, _ := strings.Cut(arg, "=")
 		switch name {
-		case "--host", "--port", "--block-private-networks", "--log-format", "--log-filter", "--log-filter-scopes", "--timeout":
+		case "--host", "--port", "--cdp-max-connections", "--cdp-max-pending-connections", "--block-private-networks", "--log-format", "--log-filter", "--log-filter-scopes", "--timeout":
 			return fmt.Errorf("browser: launch args may not set %s", name)
 		}
 	}

@@ -96,8 +96,13 @@ func New(cfg *Config, logger *slog.Logger, gw *gateway.Gateway, isReady func() b
 		clientOperationsDone: make(chan struct{}),
 	}
 
+	// Use only HTTP/1 because the CDP WebSocket path requires connection hijacking.
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+
 	httpServer := &http.Server{
-		Handler: frontend.routes(isReady),
+		Handler:   frontend.routes(isReady),
+		Protocols: protocols,
 		// ReadHeaderTimeout and ReadTimeout limit time spent receiving a request.
 		// Leave WriteTimeout unset because it includes time before response delivery.
 		// writeJSON sets a per-response deadline when delivery begins.
@@ -144,7 +149,9 @@ func (s *Server) Serve() error {
 }
 
 // Shutdown prevents new HTTP client operations and shuts down the HTTP server. It waits
-// for existing HTTP client operations to finish or ctx to expire.
+// for existing HTTP client operations to finish or ctx to expire. [http.Server.Shutdown]
+// does not wait for hijacked client connections, so Shutdown also waits for each
+// established CDP tunnel to close.
 func (s *Server) Shutdown(ctx context.Context) error {
 	clientOperationsDone := s.beginClientOperationDrain()
 	serverErr := s.server.Shutdown(ctx)
@@ -164,7 +171,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 // Close prevents new HTTP client operations. It closes the listener even if Serve was
-// never called and force-closes client connections managed by net/http.
+// never called and force-closes client connections managed by net/http. The /ws handler
+// closes its hijacked client connection when its CDPAttachment closes.
 func (s *Server) Close() error {
 	s.beginClientOperationDrain()
 	serverErr := s.server.Close()
@@ -187,6 +195,17 @@ func (s *Server) routes(isReady func() bool) http.Handler {
 	if s.apiKeyHash != nil {
 		middlewares = append(middlewares, s.requireAPIKey)
 	}
+
+	wsHandler := chain(http.HandlerFunc(s.handleCDP), middlewares...)
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		// Reject non-GET methods because a ServeMux GET pattern also accepts HEAD.
+		if r.Method != http.MethodGet {
+			w.Header().Set("Allow", http.MethodGet)
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+		wsHandler.ServeHTTP(w, r)
+	})
 
 	scriptHandler := http.MaxBytesHandler(http.HandlerFunc(s.handleScript), s.maxScriptBytes)
 	mux.Handle("POST /scripts", chain(scriptHandler, middlewares...))

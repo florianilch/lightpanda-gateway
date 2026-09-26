@@ -1,6 +1,7 @@
 package httpfrontend_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -8,10 +9,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -63,16 +64,63 @@ func TestScriptWorkflow(t *testing.T) {
 	}
 }
 
+func TestCDPTunnel(t *testing.T) {
+	frontend := newTestFrontend(t)
+
+	conn, err := (&net.Dialer{Timeout: testTimeout}).DialContext(t.Context(), "tcp", frontend.Addr().String())
+	if err != nil {
+		t.Fatalf("dial frontend: %v", err)
+	}
+	defer func() { _ = conn.Close() }()
+	if err := conn.SetDeadline(time.Now().Add(testTimeout)); err != nil {
+		t.Fatalf("set CDP connection deadline: %v", err)
+	}
+	br := bufio.NewReader(conn)
+	if _, err := fmt.Fprintf(conn,
+		"GET /ws HTTP/1.1\r\nHost: %s\r\nAuthorization: Bearer %s\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n",
+		frontend.Addr().String(), testAPIKey); err != nil {
+		t.Fatalf("write WebSocket upgrade: %v", err)
+	}
+
+	resp, err := http.ReadResponse(br, &http.Request{Method: http.MethodGet})
+	defer func() { _ = resp.Body.Close() }()
+	if err != nil {
+		t.Fatalf("read WebSocket upgrade: %v", err)
+	}
+	if resp.StatusCode != http.StatusSwitchingProtocols {
+		t.Fatalf("status = %s; want 101 Switching Protocols", resp.Status)
+	}
+	if got := resp.Header.Get("Sec-WebSocket-Accept"); got != "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=" {
+		t.Fatalf("Sec-WebSocket-Accept = %q; want valid handshake", got)
+	}
+
+	if _, err := io.WriteString(conn, "smoke-cdp"); err != nil {
+		t.Fatalf("write CDP tunnel: %v", err)
+	}
+	want := "fake-cdp!"
+	got := make([]byte, len(want))
+	if _, err := io.ReadFull(br, got); err != nil {
+		t.Fatalf("read CDP tunnel: %v", err)
+	}
+	if string(got) != want {
+		t.Fatalf("CDP tunnel response = %q; want %q", got, want)
+	}
+	if err := conn.Close(); err != nil {
+		t.Fatalf("close CDP connection: %v", err)
+	}
+}
+
 func newTestFrontend(t *testing.T) *httpfrontend.Server {
 	t.Helper()
 
 	binary := buildFakeLightpanda(t)
 	gw, err := gateway.New(&gateway.Config{
-		MaxResources:   1,
-		MaxQueueLength: 0,
-		BrowserBinary:  binary,
-		MaxStdoutBytes: 1 << 20,
-		MaxStderrBytes: 1 << 20,
+		MaxResources:      1,
+		MaxQueueLength:    0,
+		CDPStartupTimeout: testTimeout,
+		BrowserBinary:     binary,
+		MaxStdoutBytes:    1 << 20,
+		MaxStderrBytes:    1 << 20,
 	})
 	if err != nil {
 		t.Fatalf("gateway.New: %v", err)
@@ -140,11 +188,7 @@ func shutdownTestServices(frontend *httpfrontend.Server, gw *gateway.Gateway) er
 func buildFakeLightpanda(t *testing.T) string {
 	t.Helper()
 
-	binaryName := "fakelightpanda"
-	if runtime.GOOS == "windows" {
-		binaryName += ".exe"
-	}
-	binary := filepath.Join(t.TempDir(), binaryName)
+	binary := filepath.Join(t.TempDir(), "fakelightpanda")
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "go", "build", "-buildvcs=false", "-o", binary, "./testdata/fakelightpanda")

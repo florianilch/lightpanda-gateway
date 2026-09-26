@@ -44,7 +44,7 @@ func (s *Server) metricsHandler() http.Handler {
 		prometheus.NewGaugeFunc(
 			prometheus.GaugeOpts{
 				Name: "lpgw_http_client_operations_in_use",
-				Help: "Number of operations currently using the HTTP frontend limit.",
+				Help: "Number of /ws and /scripts operations currently using the HTTP frontend limit.",
 			},
 			clientOperationsInUse,
 		),

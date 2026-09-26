@@ -66,6 +66,8 @@ func run(args []string) error {
 		MaxQueueLength:      opts.maxQueuedRequests,
 		QueueTimeout:        opts.queueTimeout,
 		MaxResourceLifetime: opts.maxOperationLifetime,
+		CDPStartupTimeout:   opts.cdpStartupTimeout,
+		CDPIdleTimeout:      opts.cdpIdleTimeout,
 		BrowserBinary:       opts.browserBinary,
 		BrowserLaunchArgs:   opts.browserLaunchArgs,
 		MaxStdoutBytes:      opts.maxStdoutBytes,
@@ -101,6 +103,8 @@ func run(args []string) error {
 		"max_queued_requests", opts.maxQueuedRequests,
 		"queue_timeout", opts.queueTimeout,
 		"max_operation_lifetime", opts.maxOperationLifetime,
+		"cdp_startup_timeout", opts.cdpStartupTimeout,
+		"cdp_idle_timeout", opts.cdpIdleTimeout,
 		"shutdown_delay", opts.shutdownDelay,
 		"shutdown_grace", opts.shutdownGrace,
 	)

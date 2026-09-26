@@ -93,7 +93,7 @@ func serve(opts *options, logger *slog.Logger, gw *gateway.Gateway, httpFrontend
 
 	logger.Info("forcing shutdown")
 	// Stop Gateway resources before closing HTTP connections. Closing a HTTP connection
-	// can make a /scripts handler finish and close its Gateway resource.
+	// can make a /ws or /scripts handler finish and close its Gateway resource.
 	// A Gateway resource retains its first cancellation cause. gateway.Stop records
 	// server shutdown before httpFrontend.Close can record client closure.
 	gw.Stop()
