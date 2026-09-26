@@ -29,6 +29,10 @@ LPGW_API_KEY=secret lpgw
 lpgw --api-key-file /path/to/api-key
 ```
 
+Run `lpgw --help` to see the available settings.
+
+### Scripts
+
 ```sh
 curl http://localhost:8080/scripts \
   -H "Content-Type: application/json" \
@@ -51,11 +55,38 @@ curl http://localhost:8080/scripts \
   '
 ```
 
-Run `lpgw --help` to see the available settings.
+### CDP
+
+```ts
+import { chromium } from 'playwright-core'
+
+const browser = await chromium.connectOverCDP('http://localhost:8080/ws', {
+  headers: { 'Authorization': 'Bearer secret' },
+})
+
+const context = await browser.newContext({})
+const page = await context.newPage()
+
+await page.goto('https://example.com/')
+const title = await page.locator('h1').textContent()
+
+console.log(title) // Example Domain
+
+const client = await page.context().newCDPSession(page)
+const result = await client.send('LP.getMarkdown', {})
+console.log(result.markdown)
+
+await page.close()
+await context.close()
+await browser.close()
+```
+
 
 ## API
 
 `POST /scripts` runs a PandaScript.
+
+`GET /ws` starts the browser and exposes its CDP connection over WebSocket.
 
 **Authentication:** Bearer token, `X-Api-Key` or `?token=`.
 
