@@ -17,9 +17,11 @@ type options struct {
 	apiKeyFile           string
 	allowUnauthenticated bool
 	// maxConcurrency configures two independent limits with the same value:
-	// admitted Gateway resources and accepted HTTP /scripts operations.
+	// admitted Gateway resources and accepted HTTP /ws and /scripts operations.
 	maxConcurrency       int
 	queueTimeout         time.Duration
+	cdpStartupTimeout    time.Duration
+	cdpIdleTimeout       time.Duration
 	maxOperationLifetime time.Duration
 	maxScriptBytes       int64
 	// maxQueuedRequests limits how many validated requests may wait for a Gateway slot.
@@ -77,9 +79,11 @@ func parseFlags(args []string) (options, bool, error) {
 	fs.StringVar(&opts.addr, "addr", ":8080", "listen address")
 	fs.StringVar(&opts.apiKeyFile, "api-key-file", "", "path to a file containing the API key")
 	fs.BoolVar(&opts.allowUnauthenticated, "allow-unauthenticated", false, "disable API-key authentication")
-	fs.IntVar(&opts.maxConcurrency, "max-concurrency", 1, "maximum concurrent /scripts operations")
+	fs.IntVar(&opts.maxConcurrency, "max-concurrency", 1, "maximum concurrent /ws and /scripts operations")
 	fs.DurationVar(&opts.queueTimeout, "queue-timeout", 10*time.Second, "maximum time a request may wait in the Gateway queue; 0 has no deadline")
-	fs.DurationVar(&opts.maxOperationLifetime, "max-operation-lifetime", 30*time.Minute, "time after which an operation is asked to stop; 0 disables the limit, clients can request a shorter lifetime")
+	fs.DurationVar(&opts.cdpStartupTimeout, "cdp-startup-timeout", 15*time.Second, "maximum time for a new browser to become ready to accept CDP connections")
+	fs.DurationVar(&opts.cdpIdleTimeout, "cdp-idle-timeout", 5*time.Minute, "maximum inactivity of an established CDP WebSocket tunnel; 0 disables the timeout")
+	fs.DurationVar(&opts.maxOperationLifetime, "max-operation-lifetime", 30*time.Minute, "time after which a cdp or script operation is asked to stop; 0 disables the limit, clients can request a shorter lifetime")
 	fs.Int64Var(&opts.maxScriptBytes, "max-script-bytes", 1<<20, "max request body for /scripts")
 	fs.IntVar(&opts.maxQueuedRequests, "max-queued-requests", 5,
 		"maximum number of validated requests that may wait to start; 0 disables queueing")
@@ -204,7 +208,7 @@ func validateBrowserLaunchArg(value string) error {
 	}
 	name, _, _ := strings.Cut(value, "=")
 	switch name {
-	case "--host", "--port", "--block-private-networks", "--log-format", "--log-filter", "--log-filter-scopes", "--timeout":
+	case "--host", "--port", "--cdp-max-connections", "--cdp-max-pending-connections", "--block-private-networks", "--log-format", "--log-filter", "--log-filter-scopes", "--timeout":
 		return fmt.Errorf("argument must not set %s", name)
 	}
 	return nil
@@ -220,6 +224,12 @@ func validateLimits(opts *options) error {
 	}
 	if opts.queueTimeout < 0 {
 		return errors.New("config: -queue-timeout must not be negative")
+	}
+	if opts.cdpStartupTimeout <= 0 {
+		return errors.New("config: -cdp-startup-timeout must be greater than zero")
+	}
+	if opts.cdpIdleTimeout < 0 {
+		return errors.New("config: -cdp-idle-timeout must not be negative; zero disables it")
 	}
 	if opts.maxOperationLifetime < 0 {
 		return errors.New("config: -max-operation-lifetime must not be negative; zero means no maximum")

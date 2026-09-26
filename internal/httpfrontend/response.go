@@ -29,10 +29,14 @@ func httpStatusForGatewayError(err error, defaultStatus int) int {
 	case errors.Is(err, gateway.ErrQueueFull),
 		errors.Is(err, gateway.ErrQueueTimeout),
 		errors.Is(err, gateway.ErrDraining),
-		errors.Is(err, gateway.ErrShutdown):
+		errors.Is(err, gateway.ErrShutdown),
+		errors.Is(err, gateway.ErrCDPConnectionLimit):
 		return http.StatusServiceUnavailable
 
-	case errors.Is(err, gateway.ErrResourceTimeout):
+	case errors.Is(err, gateway.ErrResourceTimeout),
+		errors.Is(err, gateway.ErrCDPStartupTimeout),
+		errors.Is(err, gateway.ErrCDPHandshakeTimeout),
+		errors.Is(err, gateway.ErrCDPIdleTimeout):
 		return http.StatusGatewayTimeout
 
 		// Request cancellation is handled when writing the response. A context error here
@@ -49,13 +53,21 @@ func httpStatusForGatewayError(err error, defaultStatus int) int {
 // expected Gateway errors and context errors from request cancellation.
 func shouldLogGatewayError(ctx context.Context, err error) bool {
 	switch {
-	// These errors are expected when capacity is full, a timeout expires, or shutdown
-	// begins. Logging each at error level adds noise.
+	// The browser process monitor logs the exit with process diagnostics.
+	case errors.Is(err, gateway.ErrUnexpectedCDPBrowserExit):
+		return false
+
+		// These errors are expected when capacity is full, a timeout expires, or shutdown
+		// begins. Logging each at error level adds noise.
 	case errors.Is(err, gateway.ErrQueueFull),
 		errors.Is(err, gateway.ErrQueueTimeout),
 		errors.Is(err, gateway.ErrDraining),
 		errors.Is(err, gateway.ErrShutdown),
-		errors.Is(err, gateway.ErrResourceTimeout):
+		errors.Is(err, gateway.ErrCDPConnectionLimit),
+		errors.Is(err, gateway.ErrResourceTimeout),
+		errors.Is(err, gateway.ErrCDPStartupTimeout),
+		errors.Is(err, gateway.ErrCDPHandshakeTimeout),
+		errors.Is(err, gateway.ErrCDPIdleTimeout):
 		return false
 
 		// A context error is expected when the request context is done. If the request

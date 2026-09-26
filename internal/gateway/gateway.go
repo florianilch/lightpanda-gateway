@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -17,7 +18,7 @@ var (
 	ErrQueueTimeout = errors.New("queue timeout")
 	// ErrDraining means Gateway shutdown has started and admission has stopped.
 	ErrDraining = errors.New("gateway is shutting down")
-	// ErrResourceTimeout means a ScriptCall exceeded its operation lifetime.
+	// ErrResourceTimeout means a CDPBrowser or ScriptCall exceeded its operation lifetime.
 	ErrResourceTimeout = errors.New("resource timeout")
 	// ErrShutdown is the cause Gateway passes when it asks a resource to stop.
 	ErrShutdown = errors.New("gateway shutting down")
@@ -36,11 +37,18 @@ type Config struct {
 	// Zero disables the timeout. It has no effect when queueing is disabled. Negative
 	// values are invalid.
 	QueueTimeout time.Duration
-	// MaxResourceLifetime is the maximum operation lifetime for a ScriptCall.
-	// After it expires, Gateway asks the resource to stop. The resource keeps its
-	// slot until it finishes. Zero disables the limit. A caller may request
+	// MaxResourceLifetime is the maximum operation lifetime for a CDPBrowser or
+	// ScriptCall. After it expires, Gateway asks the resource to stop. The resource
+	// keeps its slot until it finishes. Zero disables the limit. A caller may request
 	// a shorter lifetime. Negative values are invalid.
 	MaxResourceLifetime time.Duration
+	// CDPStartupTimeout limits CDPBrowser.Start, including time spent waiting for
+	// other browser startups and backend connection attempts. It ends when the
+	// CDPBrowser is ready for Attach. It must be positive.
+	CDPStartupTimeout time.Duration
+	// CDPIdleTimeout limits inactivity in an established CDP tunnel. The timer starts
+	// after a successful WebSocket upgrade. Zero disables it. Negative values are invalid.
+	CDPIdleTimeout time.Duration
 
 	// BrowserBinary is the absolute path to the Lightpanda executable.
 	BrowserBinary string
@@ -81,8 +89,19 @@ type Gateway struct {
 	queueSlots chan struct{}
 
 	maxResourceLifetime time.Duration
+	cdpStartupTimeout   time.Duration
+	cdpIdleTimeout      time.Duration
 	maxStdoutBytes      int
 	maxStderrBytes      int
+
+	// cdpAddresses coordinates browser startups and backend connection attempts. It
+	// allows only one browser startup at a time, blocks startup during backend
+	// connection attempts, and records the CDPBrowser for each reported address.
+	cdpAddresses *cdpAddressCoordinator
+
+	// cdpTransport supplies the dial and HTTP settings for backend connections
+	// opened by CDPBrowser.Attach.
+	cdpTransport *http.Transport
 
 	drainOnce sync.Once
 
@@ -125,6 +144,12 @@ func New(cfg *Config) (*Gateway, error) {
 	if cfg.MaxResourceLifetime < 0 {
 		return nil, errors.New("gateway: MaxResourceLifetime must not be negative")
 	}
+	if cfg.CDPStartupTimeout <= 0 {
+		return nil, errors.New("gateway: CDPStartupTimeout must be greater than zero")
+	}
+	if cfg.CDPIdleTimeout < 0 {
+		return nil, errors.New("gateway: CDPIdleTimeout must not be negative")
+	}
 	if cfg.MaxStdoutBytes < 0 || cfg.MaxStderrBytes < 0 {
 		return nil, errors.New("gateway: output limits must not be negative")
 	}
@@ -140,8 +165,12 @@ func New(cfg *Config) (*Gateway, error) {
 		resourceSlots:       make(chan struct{}, cfg.MaxResources),
 		queueSlots:          make(chan struct{}, cfg.MaxQueueLength),
 		maxResourceLifetime: cfg.MaxResourceLifetime,
+		cdpStartupTimeout:   cfg.CDPStartupTimeout,
+		cdpIdleTimeout:      cfg.CDPIdleTimeout,
 		maxStdoutBytes:      cfg.MaxStdoutBytes,
 		maxStderrBytes:      cfg.MaxStderrBytes,
+		cdpAddresses:        newCDPAddressCoordinator(),
+		cdpTransport:        newCDPBackendTransport(),
 		draining:            make(chan struct{}),
 		done:                make(chan struct{}),
 		resourcesInUse:      make(map[gatewayResource]*time.Timer),
