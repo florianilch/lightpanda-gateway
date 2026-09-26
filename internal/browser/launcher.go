@@ -138,8 +138,6 @@ func (l *Launcher) newCmd(ctx context.Context, dir string, args []string, extraE
 	}
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	// When ctx is canceled, Cancel asks the child to stop. It sends SIGTERM on platforms
-	// that support it. WaitDelay force-kills the child if it does not exit before the delay.
 	cmd.Cancel = func() error { return cmd.Process.Signal(syscall.SIGTERM) }
 	cmd.WaitDelay = browserCmdWaitDelay
 	return &Cmd{cmd: cmd, processDir: dir}
