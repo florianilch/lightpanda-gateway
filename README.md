@@ -7,29 +7,40 @@ A gateway service for running Lightpanda workloads in private infrastructure wit
 
 ---
 
-## Install
+## Getting Started
 
-Install a supported Lightpanda binary and make sure it is available on `PATH`.
+**Base**
 
-Then install the gateway:
+Extend the `base` image to supply your own Lightpanda binary:
 
-```sh
-go install github.com/florianilch/lightpanda-gateway/cmd/lpgw@latest
+```dockerfile
+FROM ghcr.io/florianilch/lightpanda-gateway:base
+
+# Copy a supported Lightpanda binary into PATH
+COPY --from=lightpanda/browser:0.4.0 /bin/lightpanda /usr/local/bin/lightpanda
 ```
 
 The gateway currently supports Lightpanda `0.4.0`.
 
-## Usage
+**Standalone**
 
-Set an API key and start the gateway:
+Run the `standalone` image with bundled Lightpanda (or `standalone-distroless`):
 
 ```sh
-LPGW_API_KEY=secret lpgw
-# or use a file
-lpgw --api-key-file /path/to/api-key
+docker run -d --name lpgw -p 8080:8080 \
+  -e LPGW_API_KEY=secret \
+  ghcr.io/florianilch/lightpanda-gateway:standalone
+
+# or mount the API key from a file
+docker run -d --name lpgw -p 8080:8080 \
+  -v /path/to/api-key:/run/secrets/api-key:ro \
+  -e LPGW_API_KEY_FILE=/run/secrets/api-key \
+  ghcr.io/florianilch/lightpanda-gateway:standalone
 ```
 
-Run `lpgw --help` to see the available settings.
+Run `docker run --rm ghcr.io/florianilch/lightpanda-gateway:standalone --help` to see the available settings. All flags have equivalent `LPGW_*` environment variables.
+
+## Usage
 
 ### Scripts
 
@@ -72,6 +83,7 @@ const content = await page.locator('p').textContent()
 
 console.log(content)
 
+// get page as Markdown
 const client = await page.context().newCDPSession(page)
 const result = await client.send('LP.getMarkdown', {})
 console.log(result.markdown)
@@ -88,7 +100,7 @@ await context.close()
 
 **Authentication:** Bearer token, `X-Api-Key` or `?token=`.
 
-**Other:** `/healthz`, `/readyz`, `/metrics`.
+**Health & Metrics:** `/healthz`, `/readyz`, `/metrics`.
 
 ## License
 
