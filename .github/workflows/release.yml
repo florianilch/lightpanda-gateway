@@ -5,10 +5,11 @@ on:
     tags: [v*]
 
 concurrency:
-  # serialize releases regardless of tag
-  group: ${{ github.workflow }}
-  # prevent an accidental second push from terminating a release mid-upload
+  # serialize runs for the same tag without blocking other releases
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # do not terminate a release mid-upload
   cancel-in-progress: false
+  queue: max
 
 permissions: {}
 
