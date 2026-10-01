@@ -2,8 +2,8 @@
 
 A gateway service for running Lightpanda workloads in private infrastructure with process lifecycle and concurrency control. If this is not a requirement, see [Lightpanda Cloud](https://lightpanda.io/docs/core-concepts/local-vs-cloud) from the Lightpanda team.
 
-- **Admission control:** Enforce queue-backed concurrency limits with a dedicated child process per browser session.
-- **Independent replicas:** Scale capacity by running multiple instances behind a load balancer, using `/healthz`, `/readyz` and `/metrics`.
+- **Admission control:** Enforce concurrency limits with a dedicated child process per browser session.
+- **Independent replicas:** Scale capacity by running multiple instances, using `/healthz`, `/readyz` and `/metrics`.
 
 ---
 
