@@ -145,6 +145,9 @@ jobs:
       - name: Build and push base image
         id: base
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        env:
+          DOCKER_BUILD_SUMMARY: 'false'
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
         with:
           context: .
           file: ./docker/base.Dockerfile
@@ -159,6 +162,8 @@ jobs:
             org.opencontainers.image.source=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.source'] }}
             org.opencontainers.image.url=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.url'] }}
             org.opencontainers.image.version=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+          annotations: |
+            index:org.opencontainers.image.description=A gateway for running Lightpanda workloads with process lifecycle and concurrency control.
           provenance: false
           sbom: true
           push: true
@@ -228,6 +233,9 @@ jobs:
       - name: Build and push standalone image
         id: standalone
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        env:
+          DOCKER_BUILD_SUMMARY: 'false'
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
         with:
           context: .
           file: ./docker/standalone.Dockerfile
@@ -241,6 +249,8 @@ jobs:
             org.opencontainers.image.source=${{ fromJSON(steps.meta-standalone.outputs.json).labels['org.opencontainers.image.source'] }}
             org.opencontainers.image.url=${{ fromJSON(steps.meta-standalone.outputs.json).labels['org.opencontainers.image.url'] }}
             org.opencontainers.image.version=${{ fromJSON(steps.meta-standalone.outputs.json).labels['org.opencontainers.image.version'] }}
+          annotations: |
+            index:org.opencontainers.image.description=A gateway for running Lightpanda workloads with process lifecycle and concurrency control.
           provenance: false
           sbom: true
           push: true
@@ -254,6 +264,9 @@ jobs:
       - name: Build and push distroless standalone image
         id: standalone-distroless
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        env:
+          DOCKER_BUILD_SUMMARY: 'false'
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
         with:
           context: .
           file: ./docker/standalone-distroless.Dockerfile
@@ -267,6 +280,8 @@ jobs:
             org.opencontainers.image.source=${{ fromJSON(steps.meta-standalone-distroless.outputs.json).labels['org.opencontainers.image.source'] }}
             org.opencontainers.image.url=${{ fromJSON(steps.meta-standalone-distroless.outputs.json).labels['org.opencontainers.image.url'] }}
             org.opencontainers.image.version=${{ fromJSON(steps.meta-standalone-distroless.outputs.json).labels['org.opencontainers.image.version'] }}
+          annotations: |
+            index:org.opencontainers.image.description=A gateway for running Lightpanda workloads with process lifecycle and concurrency control.
           provenance: false
           sbom: true
           push: true
@@ -324,6 +339,7 @@ jobs:
 
           docker buildx imagetools create \
             --tag "${IMAGE_NAME}:standalone" \
+            --tag "${IMAGE_NAME}:latest" \
             "${IMAGE_NAME}@${STANDALONE_DIGEST}"
 
           docker buildx imagetools create \
