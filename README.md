@@ -38,11 +38,11 @@ curl http://localhost:8080/scripts \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer secret" \
   -d '{
-    "script": "const p = new Page(); await p.goto(\"$LP_TARGET\"); return p.extract({title: \"h1\"});",
+    "script": "const p = new Page(); await p.goto(\"$LP_TARGET\"); return p.extract({content: \"p\"});",
     "secrets": {"LP_TARGET": "https://example.com"},
     "timeout": "30s"
   }'
-# {"stdout":"{\"title\":\"Example Domain\"}\n","exit_code":0}
+# {"stdout":"{\"content\":\"This domain is for use in documentation examples ...\"}","exit_code":0}
 
 # or send the script directly
 curl http://localhost:8080/scripts \
@@ -51,7 +51,7 @@ curl http://localhost:8080/scripts \
   -d '
     const p = new Page();
     await p.goto("https://example.com");
-    return p.extract({title: "h1"});
+    return p.extract({content: "p"});
   '
 ```
 
@@ -68,9 +68,9 @@ const context = await browser.newContext({})
 const page = await context.newPage()
 
 await page.goto('https://example.com/')
-const title = await page.locator('h1').textContent()
+const content = await page.locator('p').textContent()
 
-console.log(title) // Example Domain
+console.log(content)
 
 const client = await page.context().newCDPSession(page)
 const result = await client.send('LP.getMarkdown', {})
