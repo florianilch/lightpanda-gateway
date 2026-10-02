@@ -1,6 +1,6 @@
 # Gateway for Lightpanda
 
-A gateway service for running Lightpanda workloads in private infrastructure with process lifecycle and concurrency control. If this is not a requirement, see [Lightpanda Cloud](https://lightpanda.io/docs/core-concepts/local-vs-cloud) from the Lightpanda team.
+A gateway service for running agentic and scripted Lightpanda workloads in private infrastructure with process lifecycle and concurrency control. If this is not a requirement, see [Lightpanda Cloud](https://lightpanda.io/docs/core-concepts/local-vs-cloud) from the Lightpanda team.
 
 - **Admission control:** Enforce concurrency limits with a dedicated child process per browser session.
 - **Independent replicas:** Scale capacity by running multiple instances, using `/healthz`, `/readyz` and `/metrics`.
@@ -66,21 +66,49 @@ curl http://localhost:8080/scripts \
   '
 ```
 
+### Agentic (e.g. Stagehand)
+
+Use Stagehand 3.x. CDP connections in Stagehand 4 require Chrome extension support, which is not implemented.
+
+```ts
+import { Stagehand } from '@browserbasehq/stagehand'
+
+const stagehand = new Stagehand({
+  env: 'LOCAL', // connect over CDP using the URL below
+  localBrowserLaunchOptions: {
+    cdpUrl: 'ws://localhost:8080/ws',
+    cdpHeaders: { Authorization: 'Bearer secret' },
+  },
+  model: 'openai/gpt-6-luna',
+})
+
+try {
+  await stagehand.init()
+  const page = await stagehand.context.newPage()
+  await page.goto('https://example.com/')
+
+  const result = await stagehand.extract('Extract the main paragraph text from the page')
+  console.log(result.extraction)
+} finally {
+  await stagehand.close()
+}
+```
+
 ### CDP
 
 ```ts
 import { chromium } from 'playwright-core'
 
-await using browser = await chromium.connectOverCDP('http://localhost:8080/ws', {
-  headers: { 'Authorization': 'Bearer secret' },
-})
+await using browser = await chromium.connectOverCDP(
+  'ws://localhost:8080/ws',
+  { headers: { 'Authorization': 'Bearer secret' } }
+)
 
 const context = await browser.newContext({})
 const page = await context.newPage()
 
 await page.goto('https://example.com/')
-const content = await page.locator('p').textContent()
-
+const content = await page.locator('p:first-of-type').textContent()
 console.log(content)
 
 // get page as Markdown
