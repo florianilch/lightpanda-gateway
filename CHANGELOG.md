@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0] - 2026-10-07
+
+This release adds support for Lightpanda v1.0.0.
+
+### Improvements
+
+- Adds support for Lightpanda versions through 1.0.0
+
+### Technical Changes
+
+- Adds documentation and a standalone Go wrapper example demonstrating how to extend distroless container images with Landlock filesystem isolation (#7)
+
 ## [0.3.0] - 2026-10-02
 
 Pre-built Docker images are now available to run and deploy gateway instances immediately.
@@ -30,3 +42,4 @@ In addition to one-off scripts, the gateway now supports streaming CDP commands 
 
 [0.2.0]: https://github.com/florianilch/lightpanda-gateway/compare/v0.1.0...v0.2.0
 [0.3.0]: https://github.com/florianilch/lightpanda-gateway/compare/v0.2.0...v0.3.0
+[0.4.0]: https://github.com/florianilch/lightpanda-gateway/compare/v0.3.0...v0.4.0
