@@ -20,7 +20,7 @@ FROM ghcr.io/florianilch/lightpanda-gateway:base
 COPY --from=lightpanda/browser:1.0.0 /bin/lightpanda /usr/local/bin/lightpanda
 ```
 
-The gateway currently supports Lightpanda `>= 0.4.0`.
+The gateway supports Lightpanda from `0.4.0` through `1.0.0`.
 
 **Standalone**
 
