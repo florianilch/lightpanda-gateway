@@ -46,9 +46,6 @@ docker-build: snapshot
 		--tag lightpanda-gateway:snapshot-standalone \
 		.
 
-release-dry:
-	goreleaser release --snapshot --clean
-
 clean:
 	rm -f $(BINARY_NAME)
 	rm -rf ./dist/
