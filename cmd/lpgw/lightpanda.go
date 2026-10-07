@@ -14,7 +14,7 @@ import (
 )
 
 // supportedBrowserVersionRange limits the tested Lightpanda versions.
-const supportedBrowserVersionRange = "= 0.4.0"
+const supportedBrowserVersionRange = ">= 0.4.0, <= 1.0.0"
 
 // validateBrowserBinary resolves binary to an absolute executable path. It runs
 // `<path> version` and accepts only the stable Lightpanda versions supported by

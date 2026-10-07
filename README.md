@@ -17,10 +17,10 @@ Extend the `base` image to supply your own Lightpanda binary:
 FROM ghcr.io/florianilch/lightpanda-gateway:base
 
 # Copy a supported Lightpanda binary into PATH
-COPY --from=lightpanda/browser:0.4.0 /bin/lightpanda /usr/local/bin/lightpanda
+COPY --from=lightpanda/browser:1.0.0 /bin/lightpanda /usr/local/bin/lightpanda
 ```
 
-The gateway currently supports Lightpanda `0.4.0`.
+The gateway currently supports Lightpanda `>= 0.4.0`.
 
 **Standalone**
 
