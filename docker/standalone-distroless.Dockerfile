@@ -9,7 +9,7 @@ ADD --chmod=0644 --checksum=sha256:8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928
 
 FROM ${BASE_IMAGE} AS lpgw
 
-FROM gcr.io/distroless/base-nossl-debian13:nonroot@sha256:8c563c1fb5e120606f0d85733049775faed6192e2bd2223ef283a5393eec22b9
+FROM gcr.io/distroless/base-nossl-debian13:nonroot@sha256:6a2a3346335b94d3be0732472245f42ca3ce3cc1135a9521a2bda4b677f2ef0d
 
 WORKDIR /app
 
