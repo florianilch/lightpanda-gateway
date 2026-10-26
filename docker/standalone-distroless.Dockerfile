@@ -2,14 +2,14 @@
 
 ARG BASE_IMAGE=ghcr.io/florianilch/lightpanda-gateway:base
 
-FROM lightpanda/browser:1.0.0@sha256:16b668ba75fdf3f9b215a0550f2840a0e76b905c645d99a23751dcd40a65688a AS lightpanda
+FROM lightpanda/browser:1.0.2@sha256:5d1d724c476957d8c2f8393a51fd089477523b0e5aa9c783c48688785d934fb9 AS lightpanda
 ADD --chmod=0644 --checksum=sha256:8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef \
-    https://raw.githubusercontent.com/lightpanda-io/browser/refs/tags/1.0.0/LICENSE \
+    https://raw.githubusercontent.com/lightpanda-io/browser/refs/tags/1.0.2/LICENSE \
     /usr/share/doc/lightpanda/LICENSE
 
 FROM ${BASE_IMAGE} AS lpgw
 
-FROM gcr.io/distroless/base-nossl-debian13:nonroot@sha256:8c563c1fb5e120606f0d85733049775faed6192e2bd2223ef283a5393eec22b9
+FROM gcr.io/distroless/base-nossl-debian13:nonroot@sha256:6a2a3346335b94d3be0732472245f42ca3ce3cc1135a9521a2bda4b677f2ef0d
 
 WORKDIR /app
 
