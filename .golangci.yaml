@@ -178,7 +178,7 @@ linters:
             - checkPrivateReceivers    # also check exported methods on unexported receiver types
         - name: increment-decrement    # use i++ / i-- instead of i += 1 / i -= 1
         - name: indent-error-flow      # prevents redundant else after a return
-        # - name: marshal-receiver       # Marshal* methods need value receivers, Unmarshal* need pointer receivers
+        - name: marshal-receiver       # Marshal* methods need value receivers, Unmarshal* need pointer receivers
         - name: package-comments       # package commenting conventions
         - name: range                  # prevents redundant vars when ranging
         - name: receiver-naming        # conventions around receiver naming
