@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2] - 2026-10-26
+
+Support Lightpanda up to v1.0.2 and include the latest Go security fixes.
+
+### Improvements
+
+- Adds support for Lightpanda versions through 1.0.2.
+
 ## [0.4.1] - 2026-10-10
 
 This release addresses multiple security advisories from the Go standard-library affecting HTTP, TLS, and MIME handling.
@@ -48,3 +56,4 @@ In addition to one-off scripts, the gateway now supports streaming CDP commands 
 [0.3.0]: https://github.com/florianilch/lightpanda-gateway/compare/v0.2.0...v0.3.0
 [0.4.0]: https://github.com/florianilch/lightpanda-gateway/compare/v0.3.0...v0.4.0
 [0.4.1]: https://github.com/florianilch/lightpanda-gateway/compare/v0.4.0...v0.4.1
+[0.4.2]: https://github.com/florianilch/lightpanda-gateway/compare/v0.4.1...v0.4.2
