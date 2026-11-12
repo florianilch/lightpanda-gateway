@@ -1,6 +1,6 @@
 module example-lpgw-landlock
 
-go 1.27.3
+go 1.27.4
 
 require github.com/landlock-lsm/go-landlock v0.11.0
 
